@@ -145,7 +145,7 @@
 
 Создается объект _Button_ для работы с кнопкой на пине _GPIOC (13)_.
 
-Если кнопка нажата _(button.Click())_:
+Если кнопка нажата _(button.IsClick())_:
 
 . Выполняется краткая задержка _(delay 10000)_ для ожидания возможного нажатия повторно.
 . Если кнопка нажата повторно, переключается режим с помощью _modeManager.SwitchModeManager()_.
@@ -154,14 +154,17 @@
 [source, cpp]
 ----
 for (;;) {
-    if (button.Click()) {
-        delay(10000);
-        if (button.Click()) {
+  modeManager.UpdateModeManager();
+    if (button.IsClick()) 
+    {
+        if (button.Click()) 
+        {
             modeManager.SwitchModeManager();
-            }
+        }
     }
+  delay(10000);
+}
 
-    modeManager.UpdateModeManager();
 ----
 
 ==== Главный цикл
@@ -191,7 +194,7 @@ for (;;) {
 
 Код реализует шаблонный класс _Button_, который отвечает за управление поведением кнопки, подключенной к определенному пину и порту микроконтроллера.
 
-Метод _Click()_ осуществляет проверку нажатия кнопки, считывая текущее состояние входного регистра порта. Он возвращает _true_, если кнопка нажата (в активном низком состоянии, когда пин равен 0), и _false_, если кнопка не нажата. 
+Метод _IsClick()_ осуществляет проверку нажатия кнопки, считывая текущее состояние входного регистра порта. Он возвращает _true_, если кнопка нажата (в активном низком состоянии, когда пин равен 0), и _false_, если кнопка не нажата. 
 
 Таким образом, класс Button позволяет легко интегрировать функциональность кнопки в проекты, использующие микроконтроллеры, обеспечивая простоту и удобство в использовании.
 
@@ -533,23 +536,24 @@ ModeManager::ModeManager(tMode& modeArr) : modes(modeArr), currentModeType(0)
 {
 }
 
-void ModeManager::InitModeManager() {
-    if (modes[currentModeType]) {
-        modes[currentModeType]->Init();
-    }
+void ModeManager::InitModeManager()
+{
+  modes[currentModeWork]->Init();
 }
 
-void ModeManager::UpdateModeManager() {
-    if (modes[currentModeType]) {
-        modes[currentModeType]->Update();
-    }
+void ModeManager::UpdateModeManager()
+{
+  modes[currentModeWork]->Update();
 }
 
-void ModeManager::SwitchModeManager() {
-    currentModeType = (currentModeType + 1) % 3; 
-    if (modes[currentModeType]) {
-        modes[currentModeType]->Init();
-    }
+void ModeManager::SwitchModeManager()
+{
+  currentModeWork++;
+  if (currentModeWork > std::size(modes)-1)
+  {
+    currentModeWork = 0; 
+  }
+  modes[currentModeWork]->Init();
 }
 ----
 
