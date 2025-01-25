@@ -8,6 +8,8 @@
 :table-caption: Таблица
 :stem: latexmath
 
+include::titul.adoc[]
+
 == Чему посвящены лабораторные работы
 
 В пятой лабораторной работе необходимо поделить код программы на классы для дальнейшего удобства в работе с ней. В шестой лабораторной работе необходимо подключить кнопку, с помощью которой можно будет переключать режимы ёлочки и шахматы, а также включить все светодиоды.
@@ -157,10 +159,8 @@ for (;;) {
   modeManager.UpdateModeManager();
     if (button.IsClick()) 
     {
-        if (button.Click()) 
-        {
-            modeManager.SwitchModeManager();
-        }
+      modeManager.SwitchModeManager();
+    
     }
   delay(10000);
 }
@@ -220,7 +220,7 @@ template<typename Tport, int pinNumber>
 class Button : public IButton 
 {
 public:
-    bool Click() override 
+    bool IsClick() override 
     {
     return (Tport::IDR::Get() & (1 << pinNumber)) == 0;
     }
@@ -243,7 +243,7 @@ public:
 
 class IButton {
 public:
-    virtual bool Click() = 0;
+    virtual bool IsClick() = 0;
 };
 #endif
 ----
