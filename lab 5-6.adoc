@@ -1,0 +1,599 @@
+= Отчет по лабораторной работе № 5,6
+:author: Газенкампф Денис Валерьевич КЭ-413
+:imagesdir: pictures
+:toc: left
+:toc-title: Оглавление
+:toclevels: 3
+:figure-caption: Рисунок
+:table-caption: Таблица
+:stem: latexmath
+
+include::titul.adoc[]
+
+== Чему посвящены лабораторные работы
+
+В пятой лабораторной работе необходимо поделить код программы на классы для дальнейшего удобства в работе с ней. В шестой лабораторной работе необходимо подключить кнопку, с помощью которой можно будет переключать режимы ёлочки и шахматы, а также включить все светодиоды.
+
+== Что такое деление на классы и для чего оно нужно
+
+Класс в программировании — это шаблон для создания объектов, который содержит:
+
+- Данные (поля или атрибуты) — описывают свойства объекта.
+- Методы — определяют поведение объекта.
+
+Деление на классы — это процесс разделения программы на логические компоненты (классы), где каждый класс представляет собой абстракцию определённого объекта или группы объектов, их свойств и поведения.
+
+Деление на классы выполняет важные функции и имеет ряд преимуществ, таких как:
+
+. Организация и структурирование кода
+- Классы помогают логически разделить код на модули или компоненты, каждый из которых отвечает за определённую функциональность. Это делает проект более читабельным и удобным для сопровождения.
+
+. Повторное использование кода
+- Один раз написанный класс можно использовать в других частях программы или даже в других проектах, что уменьшает дублирование кода.
+
+. Классы позволяют скрыть детали реализации и предоставить доступ к данным только через публичные методы. Это помогает защитить данные от некорректного использования.
+
+. Модульность
+- Разделение функционала на классы делает программу модульной. Это упрощает добавление или изменение отдельных частей программы без влияния на другие части.
+
+. Использование принципов ООП (Объектно-Ориентированного Программирования)
+- Наследование: позволяет создавать новые классы на основе существующих.
+- Полиморфизм: позволяет работать с объектами разных типов через единый интерфейс.
+- Абстракция: позволяет сосредоточиться на том, что делает объект, а не как он это делает.
+
+== Код программы
+
+Ниже будет представлен код, который реализует поставленные в лабораторных работах задачи и который поделен на классы
+
+=== main.cpp
+
+==== Заголовочные файлы
+
+Заголовочные файлы — это файлы с расширением _.h_, которые содержат объявления функций, классов, переменных, констант, макросов и других элементов, но обычно не содержат их реализации. Они служат для разделения кода и упрощения работы с большими проектами. Заголовочный файл содержит интерфейс (объявления), а реализация находится в соответствующем .cpp файле.
+
+Нам необходимо подключить все необходимые для работы заголовочные файлы, такие как:
+
+- Заголовочные файлы _ILed.h, Led.h и Ledconfig.h_ содержат определения интерфейсов и реализацию для управления светодиодами.
+- Файлы _IMode.h, AllMode.h, TreeMode.h, ChessMode.h и modeconfig.h_ определяют интерфейсы и предоставляют реализацию различных режимов работы светодиодов.
+- Заголовочные файлы _Button.h и IButton.h_ используются для описания логики управления кнопкой.
+- Файлы _ModeManager.h и IModeManager.h_ реализуют логику управления текущими режимами работы.
+
+[source, cpp]
+----
+#include <cstdint>
+#include "rccregisters.hpp" // for RCC
+#include "gpioaregisters.hpp" // for GPIOA
+#include "gpiocregisters.hpp" // for GPIOC
+#include <array>
+#include "ILed.h" // for ILed
+#include "Led.h" // for Led
+#include "Ledconfig.h" // for Led
+#include "IMode.h" // for IMode
+#include "AllMode.h" // for AllMode
+#include "TreeMode.h" // for TreeMode
+#include "ChessMode.h" // for ChessMode
+#include "modeconfig.h" // for Mode
+#include "stkregisters.hpp" // for SystemTimer
+#include "scbregisters.hpp" // for ISCR register
+#include "Button.h" // for Buttom
+#include "IButton.h" // for IButtom
+#include "ModeManager.h" // for ModeManager
+#include "IModeManager.h" // for IModeManager
+----
+
+==== Тактирование портов
+
+Тактирование портов — это процесс подачи тактового сигнала на модули ввода-вывода микроконтроллера для их работы. Тактовый сигнал необходим для синхронизации работы цифровых схем, обеспечивая правильную последовательность выполнения операций.
+
+В нашем случае тактирование портов _GPIOA_ и _GPIOC_ включается в main().
+
+. _GPIOC (13)_ — вход, необходимый для кнопки.
+. _GPIOA (5)_ и _GPIOC (5, 8, 9)_ — выходы, необходимые для светодиодов.
+
+[source, cpp]
+----
+    GPIOA::MODER::MODER5::Output::Set();
+    GPIOC::MODER::MODER5::Output::Set();
+    GPIOC::MODER::MODER8::Output::Set();
+    GPIOC::MODER::MODER9::Output::Set();
+    GPIOC::MODER::MODER13::Input::Set();
+----
+
+==== Создание объектов светодиодов
+
+Далее идет процесс создания объектов светодиодов.
+
+Создаются экземпляры класса _Led_, которые привязывают конкретные выводы микроконтроллера к интерфейсу управления светодиодами. Все созданные объекты светодиодов помещаются в массив _leds_. Этот массив служит для централизованного управления светодиодами в различных режимах работы.
+
+[source, cpp]
+----
+    Led <GPIOC, 5> led1;
+    Led <GPIOC, 8> led2;
+    Led <GPIOC, 9> led3;
+    Led <GPIOA, 5> led4;
+    Button <GPIOC, 13> button;
+----
+
+==== Режим работы светодиодов
+
+Нам необходимо создать три режима работы для реализации поставленной задачи:
+
+- *TreeMode* — режим, при котором светодиоды последовательно загораются один за другим, создавая эффект бегущего огня (режим ёлки).
+- *ChessMode* — режим, где светодиоды мигают в чередующемся порядке, напоминая узор шахматной доски.
+- *AllMode* — режим, при котором все светодиоды включаются одновременно, создавая равномерное освещение.
+
+Все режимы необходимо добавить в массив _modes_.
+
+[source, cpp]
+----
+    TreeMode TreeMode(leds);
+    ChessMode ChessMode(leds);
+    AllMode AllMode(leds);
+
+    tMode modes = { &TreeMode, &ChessMode, &AllMode };
+----
+
+==== Менеджер режимов
+
+Объект _ModeManager_ выполняет роль контроллера, который управляет переключением между различными режимами работы и их обновлением в процессе выполнения программы. Для инициализации и настройки работы режимов вызывается метод _modeManager_._InitModeManager()_, который подготавливает объект к дальнейшему использованию.
+
+[source, cpp]
+----
+    ModeManager modeManager(modes);
+    modeManager.InitModeManager();
+----
+
+==== Обработка кнопки
+
+Создается объект _Button_ для работы с кнопкой на пине _GPIOC (13)_.
+
+Если кнопка нажата _(button.IsClick())_:
+
+. Выполняется краткая задержка _(delay 10000)_ для ожидания возможного нажатия повторно.
+. Если кнопка нажата повторно, переключается режим с помощью _modeManager.SwitchModeManager()_.
+. Если же нажатие было единовременным, то обновляется текущий режим через _modeManager.UpdateModeManager()_.
+
+[source, cpp]
+----
+for (;;) {
+  modeManager.UpdateModeManager();
+    if (button.IsClick()) 
+    {
+      modeManager.SwitchModeManager();
+    
+    }
+  delay(10000);
+}
+
+----
+
+==== Главный цикл
+
+В рамках главного цикла:
+
+- Осуществляется мониторинг состояния кнопки.
+- При необходимости происходит переключение между режимами.
+- Обновляется информация о текущем режиме.
+- Вводится задержка для обеспечения более плавного функционирования.
+
+=== Заголовочные файлы проекта (формата _.h_)
+
+Заголовочные файлы формата _.h (header files)_ - это файлы, которые содержат объявления различных элементов, таких как функции, классы, структуры, константы и переменные. Эти файлы не содержат реализации функций, а служат для информирования компилятора о доступных в программе интерфейсах. Как было сказано раннее, они используются для разделения кода на модули и упрощения взаимодействия между ними.
+
+Заголовочные файлы .h обычно имеют следующий состав:
+
+- Директивы препроцессора: Это команды, которые обрабатываются до компиляции. 
+- Объявления функций: Здесь объявляются функции, которые будут использоваться в коде.
+- Объявления классов/структур: Если используется объектно-ориентированное программирование, можно объявить классы и структуры.
+- Константы и типы данных: Объявления констант или пользовательских типов данных могут быть также включены.
+
+Основная часть файлов кода, представленных ниже и имеющих расширение _.h_, имеет схожую структуру, описанную выше.
+
+==== _IButton.h_
+
+Код реализует шаблонный класс _Button_, который отвечает за управление поведением кнопки, подключенной к определенному пину и порту микроконтроллера.
+
+Метод _IsClick()_ осуществляет проверку нажатия кнопки, считывая текущее состояние входного регистра порта. Он возвращает _true_, если кнопка нажата (в активном низком состоянии, когда пин равен 0), и _false_, если кнопка не нажата. 
+
+Таким образом, класс Button позволяет легко интегрировать функциональность кнопки в проекты, использующие микроконтроллеры, обеспечивая простоту и удобство в использовании.
+
+==== Директива предпроцессора
+
+[source, cpp]
+----
+#ifndef Button_h
+#define Button_h
+----
+
+==== Подключение зависимости
+
+[source, cpp]
+----
+#include "IButton.h"
+----
+
+==== Объявление основной структуры
+
+[source, cpp]
+----
+template<typename Tport, int pinNumber>
+class Button : public IButton 
+{
+public:
+    bool IsClick() override 
+    {
+    return (Tport::IDR::Get() & (1 << pinNumber)) == 0;
+    }
+};
+----
+
+==== Защита
+
+[source, cpp]
+----
+#endif
+----
+
+==== _IButton.h_
+
+[source, cpp]
+----
+#ifndef IButton_h
+#define IButton_h
+
+class IButton {
+public:
+    virtual bool IsClick() = 0;
+};
+#endif
+----
+
+==== _Ledconfig.h_
+
+[source, cpp]
+----
+#ifndef LedConfig_h
+#define LedConfig_h
+
+#include <array>
+#include "ILed.h" //for ILed
+using tLeds = std::array<ILed*, 4>;
+
+#endif
+----
+
+==== _ILed.h_
+
+[source, cpp]
+----
+#ifndef ILED_H
+#define ILED_H
+class ILed {
+public:
+    virtual void Light() = 0;
+    virtual void Switch() = 0;
+};
+#endif
+----
+
+==== _Led.h_
+
+[source, cpp]
+----
+#ifndef LED_H
+#define LED_H
+template<typename Tport, int pinNumber>
+class Led : public ILed {
+public:
+    void Light() override {
+        Tport::ODR::Set(1 << pinNumber);
+    }
+    
+    void Switch() override {
+        Tport::ODR::Toggle(1 << pinNumber);
+    }
+};
+#endif
+----
+
+==== _modeconfig.h_
+
+[source, cpp]
+----
+#ifndef MODECONFIG_H
+#define MODECONFIG_H
+
+#include <array>
+#include "IMode.h"
+
+using tMode = std::array<IMode*, 3>;
+
+#endif
+----
+
+==== _IMode.h_
+
+[source, cpp]
+----
+#ifndef IMODE_H
+#define IMODE_H
+class IMode
+    {
+    public:
+      virtual void Update() = 0;
+      virtual void Init() = 0;
+    };
+#endif
+----
+
+==== _IModeManager.h_
+
+[source, cpp]
+----
+#ifndef IMODEMANAGER_H
+#define IMODEMANAGER_H
+
+class IModeManager 
+{
+public:
+    virtual void InitModeManager() = 0;  
+    virtual void UpdateModeManager() = 0;  
+    virtual void SwitchModeManager() = 0;  
+};
+#endif
+----
+
+==== _AllMode.h_
+
+[source, cpp]
+----
+#ifndef AllMode_H
+#define AllMode_H
+#include "ledconfig.h" // for tLeds
+#include "IMode.h"
+
+class AllMode:public IMode
+{
+public:
+  AllMode(tLeds& ledsArr);
+  void Update() override;
+  void Init() override;
+private:
+  tLeds& leds;
+};
+
+#endif
+----
+
+==== _ChessMode.h_
+
+[source, cpp]
+----
+#ifndef CHESSMODE_H
+#define CHESSMODE_H
+#include "ledconfig.h" // for tLeds
+#include "IMode.h"
+class ChessMode:public IMode
+{
+public:
+  ChessMode(tLeds& ledsArr);
+  void Update() override;
+  void Init() override;
+private:
+  tLeds& leds;
+};
+
+#endif
+----
+
+==== _ModeManager.h_
+
+[source, cpp]
+----
+#ifndef MODEMANAGER_H
+#define MODEMANAGER_H
+
+#include "IModeManager.h"
+#include "ModeConfig.h" // for tMode
+
+class ModeManager : public IModeManager
+{
+public:
+  ModeManager(tMode& modes); 
+  void InitModeManager() override; 
+  void UpdateModeManager() override; 
+  void SwitchModeManager() override; 
+private:
+  tMode& modes; 
+  std::uint8_t currentModeType; 
+};
+
+#endif
+----
+
+==== _TreeMode.h_
+
+[source, cpp]
+----
+#ifndef TREEMODE_H
+#define TREEMODE_H
+#include "ledconfig.h" // for tLeds
+#include "IMode.h"
+class TreeMode:public IMode
+ {
+ public:
+  TreeMode(tLeds& ledsArr);
+  void Update() override; 
+  void Init() override;
+
+    private:
+      tLeds& leds;
+      std::size_t currentLedIndex;
+    };
+#endif
+----
+
+=== Файлы проекта формата _.cpp_
+
+Файлы проекта с расширением .cpp представляют собой исходные файлы на языке программирования C++. Они содержат код, написанный на этом языке, который может включать в себя определения функций, классов, переменных и другие элементы программной логики.
+
+Файлы данного формата .cpp нужны для того, чтобы реализовать:
+
+- Структуру программы: Файлы .cpp могут содержать реализацию функций и классов, которые были объявлены в заголовочных файлах с расширением _.h_ или _.hpp_. 
+- Компиляцию: Для запуска кода, содержащегося в файлах _.cpp_, этот код должен быть скомпилирован с помощью компилятора. В процессе компиляции выполняется преобразование исходного кода в исполняемый файл.
+- Организацию проекта: В проекте файлы _.cpp_ организуются в различные папки для лучшей структуры и управления кодом, что упростит нам понимание и поддержку проекта.
+
+Так же как и в случае с заголовочными файлами, в файлах данного формата можно выделить общие элементы, такие как:
+
+. Конструктор
+- Во всех классах _AllMode, ChessMode, TreeMode, ModeManager_ конструктор принимает в качестве параметра ссылку на контейнер (например, _tLeds_ или _tMode_) и сохраняет её как член класса. Это позволяет каждому классу использовать переданный контейнер для дальнейшей работы.
+
+. Метод _Init()_
+- Для всех режимов (_AllMode, ChessMode, TreeMode_): Метод _Init()_ отвечает за первичную настройку светодиодов, например, он может их активировать или установить начальное состояние.
+
+. _TreeMode_ 
+- Дополнительно инициализируется переменная, представляющая текущий индекс светодиода, что позволяет управлять их состоянием более точно.
+
+. Метод _Update()_
+
+Все классы реализуют логику обновления состояния:
+
+- В _AllMode_ и _ChessMode_ происходит переключение состояния светодиодов при помощи метода _Switch()_.
+- В _TreeMode_ переключение осуществляется по одному светодиоду за раз, с учетом его индекса для управления.
+- В _ModeManager_ осуществляется вызов метода _Update()_ текущего активного режима, что позволяет централизовать обновление состояния всех режимов.
+
+Ниже представлены файлы данного формата _.cpp_.
+
+==== _AllMode.cpp_
+
+[source, cpp]
+----
+#include "AllMode.h" // for tLeds
+
+AllMode::AllMode(tLeds& ledsArr) : leds(ledsArr)
+{
+}
+
+void AllMode::Update()
+{
+  for(auto it: leds)
+  {
+    it -> Switch();
+  }
+}
+
+void AllMode::Init()
+{
+  for(auto it: leds)
+  {
+    it -> Light();
+  }
+}
+----
+
+==== _ChessMode.cpp_
+
+[source, cpp]
+----
+#include "chessmode.h"
+
+ChessMode::ChessMode(tLeds& ledsArr): leds(ledsArr)
+{
+}
+void ChessMode::Update()
+{
+  for(auto it: leds)
+  {
+    it->Switch();
+
+  }
+}
+
+void ChessMode::Init()
+{
+  for(auto it: leds)
+  {
+    it->Light();
+  }
+  for(auto i=0; i< leds.size(); ++i)
+  {
+    if ((i % 2)==0)
+    {
+      leds[i]->Switch();
+    }
+  }
+}
+----
+
+==== _ModeManager.cpp_
+
+[source, cpp]
+----
+#include "ModeManager.h"
+
+ModeManager::ModeManager(tMode& modeArr) : modes(modeArr), currentModeType(0) 
+{
+}
+
+void ModeManager::InitModeManager()
+{
+  modes[currentModeWork]->Init();
+}
+
+void ModeManager::UpdateModeManager()
+{
+  modes[currentModeWork]->Update();
+}
+
+void ModeManager::SwitchModeManager()
+{
+  currentModeWork++;
+  if (currentModeWork > std::size(modes)-1)
+  {
+    currentModeWork = 0; 
+  }
+  modes[currentModeWork]->Init();
+}
+----
+
+==== _TreeMode.cpp_
+
+[source, cpp]
+----
+#include "treemode.h" // for tLeds
+
+TreeMode::TreeMode(tLeds& ledsArr) : leds(ledsArr)
+{
+}
+
+void TreeMode::Update()
+{
+  leds[currentLedIndex]->Switch();
+    currentLedIndex++;
+    if(currentLedIndex >= leds.size())
+    {
+      currentLedIndex=0;
+    }
+}
+
+void TreeMode::Init()
+{
+     currentLedIndex=0;
+    for(auto it: leds)
+     {
+          it->Light();
+     }
+}
+----
+
+
+Результат деления на классы представлен на рисунке <<pic1_5>>.
+
+.Полученное деление на классы в программе IAR
+[#pic1_5]
+image::pic1_5.png[300x300]
+
+== Вывод
+
+Таким образом, цели и задачи, поставленные перед нами в данных лабораторных работах были выполнены. Нам удалось поделить код программы на классы для дальнейшего удобства в работе с ней. Также мы подключили кнопку, с помощью которой можно переключать режимы ёлочки и шахматы, а также включить все светодиоды.
+
