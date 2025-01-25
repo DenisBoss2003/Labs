@@ -8,7 +8,7 @@
 :table-caption: Таблица
 :stem: latexmath
 
-include::titul.adoc[]
+include::titul7.adoc[]
 
 == Цели и задачи лабораторной работы
 
