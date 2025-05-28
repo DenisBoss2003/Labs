@@ -1,14 +1,4 @@
 = UML диаграммы
-Шумаков А.С. <КЭ-413>
-Газенкампф Д.В. <КЭ-413>
-:imagesdir: image
-:toc:
-:toc-title: Оглавление
-:figure-caption: Рисунок
-:table-caption: Таблица
-:sectnums: |,all|
-:stem: latexmath
-:numbered:
 
 .Диаграмма "задачи"
 [plantuml]
