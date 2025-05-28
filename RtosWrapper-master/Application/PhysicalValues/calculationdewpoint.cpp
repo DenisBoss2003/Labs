@@ -1,19 +1,28 @@
 #include "calculationdewpoint.h"
-#include <iostream> // for log()
+#include <cmath> // для std::log
 
 void DewPoint::Calculation()
 {
-  constexpr float a = 17.27f; // значение взятые с википедии
-  constexpr float b = 237.7f; // значение взятые с википедии, градусы
-  constexpr auto divider = 10.0f;
-  auto humidity = mdataH.GetData();
-  auto temperature = mdataT.GetData();
-  float measuredY = ((a * temperature) / (b + temperature))+ std::log(humidity);
-  value = (b * measuredY) / (a - measuredY);
-  value = value / divider;  
+    constexpr float a = 17.27f;
+    constexpr float b = 237.7f;
+    
+    
+    auto humidity = mdataH.GetData(); // в процентах (например, 50%)
+    auto temperature = mdataT.GetData(); // в градусах Цельсия
+    
+   
+    float humidityFraction = humidity / 100.0f;
+    
+   
+    float gamma = (a * temperature) / (b + temperature) + std::log(humidityFraction);
+    
+    
+    value = (b * gamma) / (a - gamma);
+    
+   
 }
 
 float DewPoint::GetData()
 {
-  return value;
-};
+    return value;
+}
