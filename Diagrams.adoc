@@ -19,7 +19,7 @@ class MeasureTask
 class SendTask
 
 interface IDewPointUpdate {
-    +Update(): void
+    +Calculation(): void
 }
 
 interface IMeasurementsController {
@@ -29,12 +29,7 @@ interface IMeasurementsController {
 interface ITransfer {
     +TransferData(): void
 }
-interface IFormatter {
-    +TransferData(): void
-}
-interface IFloatDataProvider {
-    +TransferData(): void
-}
+
 
 interface IMeasurementsController
 interface ITransfer
@@ -45,8 +40,6 @@ MeasureTask o--IDewPointUpdate
 MeasureTask o-- IMeasurementsController
 
 SendTask o-- ITransfer
-SendTask o--IFormatter
-SendTask o--IFloatDataProvider
 
 note left of MeasureTask
 Выполняет задачу получение новых
@@ -143,7 +136,7 @@ Humidity --|> IFloatDataProvider
 Press --|> IFloatDataProvider
 
 
-Formattre --|> IFormatter
+Formatter --|> IFormatter
 SendTask o-- IFloatDataProvider
 SendTask o-- IFormatter
 SendTask o-- ITransfer

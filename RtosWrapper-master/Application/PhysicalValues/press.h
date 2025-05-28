@@ -7,13 +7,13 @@
 class Press: public IFloatDataProvider, public IDewPointUpdate, public IDataNotifyP
 {
 public:
-  void Calculation() override;  
   void OnUpdate(int32_t registerCodeP)  override;  
   float GetData() override;
 
 private:
    int32_t adcP;
    float value;
-    
+  void Calculation();  
+
 };
 #endif

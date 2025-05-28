@@ -13,6 +13,7 @@ void Press::Calculation()
 void Press::OnUpdate(int32_t registerCodeP) 
 {
   adcP = registerCodeP;
+   Calculation();
 }
 
 float Press::GetData() 

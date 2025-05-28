@@ -10,6 +10,7 @@ void Humidity::Calculation()
 void Humidity::OnUpdate(int16_t registerCodeH)
 {
   adcH = registerCodeH;
+  Calculation();
 }
 
 float Humidity::GetData() 

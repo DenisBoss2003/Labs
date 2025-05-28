@@ -4,6 +4,7 @@ void Temperature::OnUpdate(uint16_t digRegT1, int16_t digRegT3, int32_t register
   adcT = registerCodeT;
   digT1 = digRegT1;
   digT3 = digRegT3;
+   Calculation();
 }
 
  void Temperature::Calculation()
